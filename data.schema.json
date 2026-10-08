@@ -1,0 +1,498 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "dot task snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "maxConcurrency",
+    "capacityKnown",
+    "slots",
+    "waiting",
+    "recent",
+    "maintenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Actual observation time, ISO 8601 including timezone; rendered in Asia/Shanghai"
+    },
+    "maxConcurrency": {
+      "const": 7,
+      "description": "Legacy schema-v2 field for the seven fixed presentation positions. It is not live runtime capacity or a concurrency entitlement."
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "status",
+          "title",
+          "summary"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "status": {
+            "enum": [
+              "running",
+              "waiting",
+              "available",
+              "unknown"
+            ]
+          },
+          "featured": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "goal": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "latestResult": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "blocker": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "observedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Task language model identifier, independent of the visual character. Show only with modelSource; never infer from parent or account settings.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "reasoningEffort": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Task reasoning-effort identifier. Show only with reasoningEffortSource; do not infer a default.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "modelSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective model verified from runtime evidence; unknown/omitted = unverifiable."
+          },
+          "reasoningEffortSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective effort verified from runtime evidence; unknown/omitted = unverifiable."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "modelSource"
+              ],
+              "properties": {
+                "modelSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "model"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "reasoningEffortSource"
+              ],
+              "properties": {
+                "reasoningEffortSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reasoningEffort"
+              ],
+              "properties": {
+                "reasoningEffort": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "waiting": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "description",
+          "observedAt",
+          "kind"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "enum": [
+              "external",
+              "decision",
+              "paused"
+            ]
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Task language model identifier, independent of the visual character. Show only with modelSource; never infer from parent or account settings.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "reasoningEffort": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Task reasoning-effort identifier. Show only with reasoningEffortSource; do not infer a default.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "modelSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective model verified from runtime evidence; unknown/omitted = unverifiable."
+          },
+          "reasoningEffortSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective effort verified from runtime evidence; unknown/omitted = unverifiable."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "modelSource"
+              ],
+              "properties": {
+                "modelSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "model"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "reasoningEffortSource"
+              ],
+              "properties": {
+                "reasoningEffortSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reasoningEffort"
+              ],
+              "properties": {
+                "reasoningEffort": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "recent": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "result",
+          "status"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "result": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "status": {
+            "enum": [
+              "completed",
+              "stopped"
+            ]
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 160,
+            "description": "Task language model identifier, independent of the visual character. Show only with modelSource; never infer from parent or account settings.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "reasoningEffort": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Task reasoning-effort identifier. Show only with reasoningEffortSource; do not infer a default.",
+            "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "modelSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective model verified from runtime evidence; unknown/omitted = unverifiable."
+          },
+          "reasoningEffortSource": {
+            "enum": [
+              "requested",
+              "runtime",
+              "unknown",
+              null
+            ],
+            "description": "requested = explicit launch argument only; runtime = effective effort verified from runtime evidence; unknown/omitted = unverifiable."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "modelSource"
+              ],
+              "properties": {
+                "modelSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "model"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "reasoningEffortSource"
+              ],
+              "properties": {
+                "reasoningEffortSource": {
+                  "enum": [
+                    "requested",
+                    "runtime"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reasoningEffort"
+              ],
+              "properties": {
+                "reasoningEffort": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "capacityKnown": {
+      "type": "boolean",
+      "description": "Whether unassigned positions were verified for this snapshot. Never interpretable as guaranteed runtime capacity."
+    },
+    "maintenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "intervalMinutes",
+        "observedAt",
+        "description"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "enabled",
+            "paused",
+            "unknown"
+          ]
+        },
+        "intervalMinutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10080
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        }
+      }
+    }
+  }
+}

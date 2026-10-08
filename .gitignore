@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.dev.vars*
+.openai/
+.wrangler/
+.sites-runtime/
+.npm-cache/
+*.log
+*.sqlite*
+*.db
+*.har
+coverage/
+.DS_Store

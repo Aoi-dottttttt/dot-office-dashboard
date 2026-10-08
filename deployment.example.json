@@ -1,0 +1,9 @@
+{
+  "description": "Documentation only; no resources are provisioned by this file.",
+  "demo": {"DASHBOARD_MODE": "demo"},
+  "private": {
+    "DASHBOARD_MODE": "private",
+    "DASHBOARD_ORIGIN": "https://dashboard.example.invalid",
+    "requires": ["A verified server-only authorize function", "A separately configured DB binding", "The reviewed SQL migration"]
+  }
+}

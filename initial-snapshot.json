@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2000-01-01T00:00:00Z",
+  "maxConcurrency": 7,
+  "capacityKnown": false,
+  "maintenance": {
+    "status": "paused",
+    "intervalMinutes": 10,
+    "observedAt": "2000-01-01T00:00:00Z",
+    "description": "虚构演示未连接任务来源或计划更新器。"
+  },
+  "slots": [
+    {
+      "number": 1,
+      "status": "running",
+      "title": "示例：整理资料",
+      "summary": "虚构任务：将示例资料整理成清晰目录。",
+      "category": "虚构示例",
+      "observedAt": "2000-01-01T00:00:00Z",
+      "goal": "演示任务详情的展示方式。",
+      "latestResult": "已准备一份虚构进度记录。",
+      "blocker": "无真实任务或外部操作。"
+    },
+    {
+      "number": 2,
+      "status": "running",
+      "title": "示例：设计首页",
+      "summary": "虚构任务：比较几种布局，完善演示页面。",
+      "category": "虚构示例",
+      "observedAt": "2000-01-01T00:00:00Z",
+      "goal": "演示任务详情的展示方式。",
+      "latestResult": "已准备一份虚构进度记录。",
+      "blocker": "无真实任务或外部操作。"
+    },
+    {
+      "number": 3,
+      "status": "running",
+      "title": "示例：检查测试",
+      "summary": "虚构任务：核对测试记录与样例输出。",
+      "category": "虚构示例",
+      "observedAt": "2000-01-01T00:00:00Z",
+      "goal": "演示任务详情的展示方式。",
+      "latestResult": "已准备一份虚构进度记录。",
+      "blocker": "无真实任务或外部操作。"
+    },
+    {
+      "number": 4,
+      "status": "available",
+      "title": "空展示位",
+      "summary": "虚构示例中未放置任务，不代表真实运行容量。",
+      "observedAt": "2000-01-01T00:00:00Z"
+    },
+    {
+      "number": 5,
+      "status": "available",
+      "title": "空展示位",
+      "summary": "虚构示例中未放置任务，不代表真实运行容量。",
+      "observedAt": "2000-01-01T00:00:00Z"
+    },
+    {
+      "number": 6,
+      "status": "available",
+      "title": "空展示位",
+      "summary": "虚构示例中未放置任务，不代表真实运行容量。",
+      "observedAt": "2000-01-01T00:00:00Z"
+    },
+    {
+      "number": 7,
+      "status": "available",
+      "title": "空展示位",
+      "summary": "虚构示例中未放置任务，不代表真实运行容量。",
+      "observedAt": "2000-01-01T00:00:00Z"
+    }
+  ],
+  "waiting": [
+    {
+      "title": "示例：等待选色",
+      "description": "虚构的等待事项，用于演示决策列表。",
+      "observedAt": "2000-01-01T00:00:00Z",
+      "kind": "decision"
+    }
+  ],
+  "recent": [
+    {
+      "title": "示例：完成线框图",
+      "result": "虚构结果：准备了一份示例布局。",
+      "observedAt": "2000-01-01T00:00:00Z",
+      "status": "completed"
+    }
+  ]
+}

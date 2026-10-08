@@ -1,0 +1,22 @@
+{
+  "name": "dot-office-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node check.mjs && node --test test/*.test.mjs",
+    "db:generate": "drizzle-kit generate",
+    "start": "node scripts/serve.mjs",
+    "check": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.10",
+    "drizzle-orm": "0.45.2",
+    "esbuild": "0.25.12",
+    "three": "0.186.1"
+  },
+  "description": "Seven-seat 3D task office with fictional demo data and a fail-closed private API adapter",
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="dot 的七个工作位。查看任务状态、最新结果和最后核对时间。" />
+  <title>dot 办公室</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230071e3'/%3E%3Ccircle cx='16' cy='16' r='7' fill='white'/%3E%3C/svg%3E" />
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="state.js" defer></script>
+  <script src="seat-settings.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="scene-loader.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#task-slots">跳到工位</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#"><span class="brand-mark" aria-hidden="true">d</span><span>dot<span class="brand-separator">/</span><span class="brand-subtitle">办公室</span></span></a>
+      <div class="toolbar">
+        <fieldset class="theme-control"><legend class="sr-only">页面外观</legend><label><input type="radio" name="theme" value="light" /><span>浅色</span></label><label><input type="radio" name="theme" value="dark" /><span>深色</span></label><label><input type="radio" name="theme" value="system" /><span>自动</span></label></fieldset>
+        <button class="icon-button motion-toggle" id="motion-toggle" type="button" aria-pressed="true" aria-label="关闭工作动画" title="关闭工作动画"><svg class="motion-on" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5v10M13 5v10"/></svg><svg class="motion-off" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 8 6-8 6Z"/></svg></button>
+        <span class="private-label"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6.5 8V5.5a3.5 3.5 0 0 1 7 0V8m-8 0h9a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><path d="M10 11v3"/></svg>虚构演示数据</span>
+      </div>
+    </header>
+    <main>
+      <section class="workspace-heading" aria-labelledby="workspace-title">
+        <div><p class="eyebrow">DOT OFFICE DEMO</p><h1 id="workspace-title">七个工位，一目了然。</h1></div>
+        <div class="snapshot-actions"><div class="timestamp"><span>快照记录时间</span><time id="updated-at">正在读取</time></div><button id="refresh" class="refresh" type="button" title="读取已保存的最新快照，不会重新核查任务"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A7 7 0 1 0 17 12M16.5 2.5V7H12"/></svg><span>读取快照</span></button></div>
+      </section>
+      <section class="office" aria-label="七个任务展示工位">
+        <div class="office-bar"><div class="office-title"><span class="office-indicator" aria-hidden="true"></span><h2>七个工位</h2><span class="snapshot-badge">状态快照</span></div><div class="count-group" aria-label="最近观察到的任务状态"><span><strong id="occupied-count">—</strong> 最近观察运行</span><span><strong id="waiting-count">—</strong> 已观察等待</span><span><strong id="available-count">—</strong> 空展示位</span><span><strong id="unverified-count">—</strong> 待核对</span></div></div>
+        <p class="load-message" id="load-message" role="status" aria-live="polite">正在读取任务快照…</p>
+        <p class="scene-message" id="scene-message" role="status">正在加载 3D 办公室…</p>
+        <div class="office-scene" id="office-scene">
+          <div class="office-viewport" id="office-viewport" hidden>
+            <canvas id="office-canvas" tabindex="0" role="img" aria-label="七个工位的 3D 办公室。拖动或按方向键调整视角，加减键缩放，Home 键复位。点击工位查看任务详情。"></canvas>
+            <div class="office-pins" id="office-pins" aria-label="3D 工位"></div>
+            <div class="view-tools" aria-label="办公室视角"><button id="view-zoom-out" type="button" aria-label="缩小办公室">−</button><button id="view-reset" type="button">复位视角</button><button id="view-zoom-in" type="button" aria-label="放大办公室">＋</button></div>
+            <p class="view-hint">拖动旋转 · 点击工位查看详情</p>
+          </div>
+          <img class="room-backdrop" src="assets/room.webp" alt="" aria-hidden="true" />
+          <div class="slot-grid" id="task-slots" aria-busy="true"></div>
+        </div>
+        <div class="office-foot"><span>7 个任务展示位 · 实际并发容量未核实</span><span>点击工位查看任务详情</span></div>
+      </section>
+      <section class="waiting-section" id="waiting-section" hidden aria-labelledby="waiting-heading"><div class="section-heading"><h2 id="waiting-heading">等待与暂停</h2><span>不计入执行任务</span></div><div class="waiting-list" id="waiting-list"></div></section>
+      <details class="recent" id="recent"><summary><span>最近完成与已停止 <span id="recent-count" class="count-badge">0</span></span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></summary><div id="recent-list" class="recent-list"></div></details>
+      <footer class="footer"><p>这是虚构任务演示。默认不连接真实任务、数据库或自动更新任务。</p><p id="maintenance-message"></p><p>页面每 15 秒检查新快照。动画表示最近一次核对时正在运行；超过 12 分钟未重新核对，或暂时无法刷新时，动画会停止。</p><p>七个工位用于展示任务，不是运行时容量计数。顶部数字仅统计最近 12 分钟的有效观察；过期、缺失或无法读取的状态列为待核对。空展示位只表示未放置任务，不代表可启动新任务。时间均为 UTC+08:00（东八区）。</p></footer>
+    </main>
+  </div>
+  <dialog id="task-dialog" aria-labelledby="dialog-title"><div class="dialog-shell"><div class="dialog-top"><span id="dialog-seat" class="dialog-seat"></span><button id="close-dialog" class="icon-button" type="button" aria-label="关闭任务详情" autofocus><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div><h2 id="dialog-title"></h2><p id="dialog-summary" class="dialog-summary"></p><div class="dialog-state"><span id="dialog-status" class="status"></span><span id="dialog-observed"></span></div><section class="dialog-execution-section" aria-label="任务运行配置"><div id="dialog-execution" class="task-execution"></div><p id="dialog-execution-note" class="execution-note"></p></section><details class="seat-customization"><summary>自定义工位</summary><form id="seat-editor"><label for="seat-name">工位名字 <span>最多 24 字，留空使用默认名字</span></label><input id="seat-name" name="seat-name" type="text" maxlength="48" autocomplete="off" /><label for="seat-model">dot 形象</label><div class="model-picker"><img id="seat-model-preview" width="80" height="80" alt="所选形象预览" /><select id="seat-model" name="seat-model"></select></div><p class="preference-help">名字和形象保存在当前浏览器，不会改动任务标题。</p><div class="preference-actions"><button type="submit" class="preference-save">保存设置</button><button type="button" id="seat-reset">恢复默认</button></div><p id="seat-save-message" role="status" aria-live="polite"></p></form></details><dl id="dialog-details"></dl></div></dialog>
+</body>
+</html>

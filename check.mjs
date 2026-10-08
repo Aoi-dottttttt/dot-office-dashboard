@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {execFileSync} from 'node:child_process';
+import {validSnapshot} from './worker/validate.js';
+const html=fs.readFileSync('public/index.html','utf8');
+const js=fs.readFileSync('public/app.js','utf8');
+new vm.Script(js);
+for(const file of ['theme.js','state.js','seat-settings.js','scene-loader.js'])new vm.Script(fs.readFileSync('public/'+file,'utf8'));
+for(const file of ['office-model.js','office3d.js','dot-geometry.js'])execFileSync(process.execPath,['--check','public/'+file]);
+const data=JSON.parse(fs.readFileSync('initial-snapshot.json','utf8'));
+if(!validSnapshot(data)) throw new Error('Invalid initial snapshot');
+if(!html.includes('lang="zh-CN"')||!html.includes('data:image/svg+xml'))throw new Error('Missing metadata');
+if(!js.includes("fetch('/api/snapshot'")||!js.includes('},15000)'))throw new Error('Missing fast update polling');
+if(/-----BEGIN.*PRIVATE KEY|authorization\s*:/i.test(html+js+fs.readFileSync('public/styles.css','utf8')))throw new Error('Private implementation details in frontend');
+if(!fs.existsSync('drizzle/meta/_journal.json'))throw new Error('Missing generated migration metadata');
+JSON.parse(fs.readFileSync('data.schema.json','utf8'));
+console.log('PASS: snapshot, private frontend, schema, migration metadata, JavaScript syntax, and automatic data refresh.');
