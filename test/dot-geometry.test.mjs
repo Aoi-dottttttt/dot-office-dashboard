@@ -45,12 +45,26 @@ test('eyes and detailed glasses fit the actual curved body mesh',()=>{
       if(feature.userData.surfaceDecoration){const p=feature.geometry.attributes.position;for(let i=0;i<p.count;i+=Math.max(1,Math.floor(p.count/16))){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);ray.set(new T.Vector3(x,y,2),new T.Vector3(0,0,-1));const hit=ray.intersectObject(body)[0];if(hit)assert.ok(z-hit.point.z>-.012&&z-hit.point.z<.15,`${feature.name}: rim follows dome`);}}
     });
   }
-  assert.ok(office.stations.get(6).dot.face.getObjectByName('sunglasses-left-lens'));assert.ok(office.stations.get(2).dot.face.getObjectByName('glasses-left-rim'));disposeOffice(office);
+  assert.ok(office.stations.get(6).dot.face.getObjectByName('glasses-left-rim'));assert.ok(office.stations.get(2).dot.face.getObjectByName('glasses-left-rim'));disposeOffice(office);
 });
 
-test('yellow Alfred has its own plush profile, tall oval glasses, closed eyelids, and black bow tie',()=>{
-  const office=buildOffice(),yellow=office.stations.get(2).dot;assert.equal(yellow.group.userData.shape,'alfred');assert.equal(yellow.group.userData.accessory,'alfred');assert.notEqual(yellow.body.children[0].geometry,office.stations.get(7).dot.body.children[0].geometry);
-  for(const name of ['eyelid-left','eyelid-right','glasses-left-rim','glasses-right-rim','glasses-bridge','bowtie-left','bowtie-right','bowtie-knot'])assert.ok(yellow.face.getObjectByName(name));assert.equal(yellow.face.getObjectByName('eye-left'),undefined);
-  for(const name of ['glasses-left-rim','glasses-right-rim']){const rim=yellow.face.getObjectByName(name);rim.geometry.computeBoundingBox();const size=rim.geometry.boundingBox.getSize(new T.Vector3());assert.ok(size.y>size.x*1.25);}
-  assert.ok(DOT_PROFILES.alfred.depth>=.60);assert.equal(yellow.face.getObjectByName('bowtie-knot').material.color.getHex(),0x292b34);assert.equal(office.stations.get(2).group.getObjectByName('chair-back').geometry.type,'CurvedChairBackGeometry');disposeOffice(office);
+test('characters wear their official accessories over smooth matte bodies',()=>{
+  const office=buildOffice(),dot=number=>office.stations.get(number).dot,box=mesh=>{mesh.geometry.computeBoundingBox();return mesh.geometry.boundingBox;};
+  // Yellow: round wire glasses with open eyes inside each lens, and no bow tie.
+  const yellow=dot(2);assert.equal(yellow.group.userData.shape,'alfred');assert.notEqual(yellow.body.children[0].geometry,dot(7).body.children[0].geometry);
+  for(const name of ['eye-left','eye-right','glasses-left-rim','glasses-right-rim','glasses-bridge'])assert.ok(yellow.face.getObjectByName(name),name);
+  assert.equal(yellow.face.getObjectByName('bowtie-knot'),undefined);
+  for(const name of ['glasses-left-rim','glasses-right-rim']){const size=box(yellow.face.getObjectByName(name)).getSize(new T.Vector3());assert.ok(Math.abs(size.y/size.x-1)<.15,`${name}: round lens`);}
+  const lens=box(yellow.face.getObjectByName('glasses-left-rim')),eye=yellow.face.getObjectByName('eye-left').position;
+  assert.ok(eye.x>lens.min.x&&eye.x<lens.max.x&&eye.y>lens.min.y&&eye.y<lens.max.y,'Eye sits inside the lens');
+  // Pink: thin, wide reading glasses below the eyes.
+  const heart=dot(6),reading=box(heart.face.getObjectByName('glasses-left-rim')),readingSize=reading.getSize(new T.Vector3());
+  assert.ok(readingSize.x>readingSize.y*1.4,'Reading glasses are wide ovals');assert.ok(reading.max.y<heart.face.getObjectByName('eye-left').position.y,'Reading glasses sit below the eyes');
+  // Ivory bandana, silver moon, black bow tie, beret and headset.
+  for(const name of ['bandana-front','bandana-band','bandana-knot'])assert.ok(dot(5).group.getObjectByName(name),name);
+  assert.ok(dot(3).face.getObjectByName('moon-pin').material.metalness>.8,'Silver crescent');
+  assert.equal(dot(7).face.getObjectByName('bowtie-knot').material.color.getHex(),0x292b34);
+  assert.ok(dot(4).group.getObjectByName('beret-crown'));assert.ok(dot(1).group.getObjectByName('headset-band'));
+  for(const station of office.stations.values()){const mat=station.dot.bodyMat;assert.equal(mat.normalMap,null,'No surface texture');assert.ok(mat.roughness>=.85&&!mat.clearcoat&&!mat.isMeshPhysicalMaterial,'Smooth matte finish without reflections');}
+  assert.equal(office.stations.get(2).group.getObjectByName('chair-back').geometry.type,'CurvedChairBackGeometry');disposeOffice(office);
 });

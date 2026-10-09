@@ -3,13 +3,13 @@
   if (globalThis.SeatSettings) return;
   const key = 'workstation-studio-seats-v1';
   const models = Object.freeze([
-    {id:'cloud-headset',label:'蓝色耳机云',shape:'cloud',color:0x45baf3,accessory:'headset',image:1},
-    {id:'yellow-alfred',label:'黄色 Alfred',shape:'alfred',color:0xffd52f,accessory:'alfred',image:2},
+    {id:'cloud-headset',label:'蓝色耳机云',shape:'cloud',color:0x2f9bef,accessory:'headset',image:1},
+    {id:'yellow-alfred',label:'黄色 Alfred',shape:'alfred',color:0xffd52f,accessory:'roundGlasses',image:2},
     {id:'lilac-star',label:'紫色月亮星',shape:'star',color:0xbf92ee,accessory:'moon',image:3},
     {id:'coral-beret',label:'珊瑚贝雷帽',shape:'bean',color:0xff8c78,accessory:'beret',image:4},
-    {id:'ivory-scarf',label:'奶白围巾团',shape:'puff',color:0xf6f0df,accessory:'scarf',image:5},
-    {id:'rose-heart',label:'玫瑰墨镜心',shape:'heart',color:0xed6aaa,accessory:'sunglasses',image:6},
-    {id:'orange-bowtie',label:'橙色领结团',shape:'triangle',color:0xffad4c,accessory:'bowtie',image:7}
+    {id:'ivory-scarf',label:'奶白领巾团',shape:'puff',color:0xf6f0df,accessory:'bandana',image:5},
+    {id:'rose-heart',label:'玫瑰眼镜心',shape:'heart',color:0xe9408f,accessory:'readingGlasses',image:6},
+    {id:'orange-bowtie',label:'橙色领结团',shape:'triangle',color:0xff9636,accessory:'bowtie',image:7}
   ].map(Object.freeze));
   const listeners = new Set();
   const validNumber = number => Number.isInteger(number) && number >= 1 && number <= 7;

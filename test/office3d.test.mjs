@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as T from '../public/vendor/three.js';
 import {buildOffice,SEATS,ROOM,VIEW,CHAIR,cameraLimits,setCamera,setWorking,stepStation,updateOffice,setTheme,projectAnchors,disposeOffice} from '../public/office-model.js';
-import {initOffice} from '../public/office3d.js';
+import {initOffice,createStudioEnvironment} from '../public/office3d.js';
 import '../public/state.js';
 
 function walkMeshes(root){const result=[];root.traverse(object=>{if(object.isMesh)result.push(object);});return result;}
@@ -41,7 +41,7 @@ test('camera fits the reflowed room and keeps all seven left task panels visible
     const panels=projectAnchors(o,w,h);assert.equal(panels.length,7);for(const panel of panels){assert.equal(panel.visible,true);assert.ok(panel.x+panel.width+11<panel.stationBounds.left);assert.ok(panel.y>=6&&panel.y+panel.height<h-6);}
   }disposeOffice(o);
 });
-test('theme changes keep geometry and work lights intact',()=>{const o=buildOffice();const s=o.stations.get(4);setWorking(s,true,{instant:true});const uuid=s.dot.group.uuid;setTheme(o,true);assert.equal(o.dark,true);assert.equal(o.palette.floor.color.getHex(),0x495568);assert.equal(s.screenMaterial.emissiveIntensity,.65);setTheme(o,false);assert.equal(s.dot.group.uuid,uuid);assert.equal(o.palette.floor.color.getHex(),0xe5e8ee);disposeOffice(o);});
+test('theme changes keep geometry and work lights intact',()=>{const o=buildOffice();const s=o.stations.get(4);setWorking(s,true,{instant:true});const uuid=s.dot.group.uuid;setTheme(o,true);assert.equal(o.dark,true);assert.equal(o.palette.floor.color.getHex(),0x7a7790);assert.equal(s.screenMaterial.emissiveIntensity,.65);setTheme(o,false);assert.equal(s.dot.group.uuid,uuid);assert.equal(o.palette.floor.color.getHex(),0xffffff);disposeOffice(o);});
 
 class Element {
   constructor(){this.children=[];this.events=new Map();this.dataset={};this.style={};this.attributes={};this.hidden=false;this.classSet=new Set();this.classList={add:v=>this.classSet.add(v),remove:v=>this.classSet.delete(v),contains:v=>this.classSet.has(v),toggle:(v,on)=>on?this.classSet.add(v):this.classSet.delete(v)};}
@@ -49,7 +49,7 @@ class Element {
   addEventListener(k,fn){if(!this.events.has(k))this.events.set(k,new Set());this.events.get(k).add(fn);}removeEventListener(k,fn){this.events.get(k)?.delete(fn);}emit(k,e={}){for(const fn of this.events.get(k)||[])fn(e);}
   getBoundingClientRect(){return{left:0,top:0,width:this.width||1000,height:this.height||650};}setPointerCapture(){}releasePointerCapture(){}
 }
-function runtime(t,{reduced=false,dark=false,running=true,rendererFails=false,paintFails=false,probe=null}={}){
+function runtime(t,{reduced=false,dark=false,running=true,rendererFails=false,paintFails=false,probe=null,environmentFactory}={}){
   const names=['document','window','matchMedia','ResizeObserver'];const prior=names.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]);
   t.after(()=>{for(const [key,descriptor] of prior){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}});
   const nodes=new Map();const document=new Element();document.documentElement={dataset:{theme:'system',motion:'on'}};document.hidden=false;document.createElement=()=>new Element();document.getElementById=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
@@ -58,7 +58,7 @@ function runtime(t,{reduced=false,dark=false,running=true,rendererFails=false,pa
   let snapshot={slots:SEATS.map(s=>({number:s.number,status:running?'running':'available',observedAt:new Date(Date.now()-60000).toISOString(),title:`Task ${s.number}`}))};let transport=true;
   const bridge={getSnapshot:()=>snapshot,getTransportOk:()=>transport,openSeat:(...args)=>{opened=args;}};let opened=null;const raf=new Map();let id=0;let renders=0;let fallbackMessage=null;const renderer={shadowMap:{},setPixelRatio(){},setSize(w,h){this.size=[w,h];},render(){renders++;if(paintFails)throw Error('GPU render error');},dispose(){this.disposed=true;}};
   if(probe)Object.assign(probe,{renderer,observer});
-  const api=initOffice({bridge,fallback:message=>{fallbackMessage=message;if(probe)probe.message=message;},rendererFactory:()=>{if(rendererFails)throw Error('No WebGL2');return renderer;},requestFrame:fn=>{raf.set(++id,fn);return id;},cancelFrame:key=>raf.delete(key)});
+  const api=initOffice({bridge,fallback:message=>{fallbackMessage=message;if(probe)probe.message=message;},rendererFactory:()=>{if(rendererFails)throw Error('No WebGL2');return renderer;},environmentFactory,requestFrame:fn=>{raf.set(++id,fn);return id;},cancelFrame:key=>raf.delete(key)});
   t.after(()=>api.dispose());
   return{api,nodes,document,window,reducedQuery,darkQuery,renderer,raf,observer,renderCount:()=>renders,fallback:()=>fallbackMessage,opened:()=>opened,setSnapshot:v=>{snapshot=v;},snapshot:()=>snapshot,setTransport:v=>{transport=v;},frame(time=100){const pending=[...raf.values()];raf.clear();pending.forEach(fn=>fn(time));}};
 }
@@ -89,3 +89,32 @@ test('renderer initialization failure is surfaced to the explicit fallback loade
 test('first render failure releases resources and leaves the explicit compatibility path',t=>{const probe={};assert.throws(()=>runtime(t,{paintFails:true,probe}),/3D render failed/);assert.match(probe.message,/二维兼容视图/);assert.equal(probe.renderer.disposed,true);assert.equal(probe.observer.disconnected,true);});
 test('bfcache pause resumes safely without rebuilding the scene',t=>{const r=runtime(t);const uuid=r.api.office.stations.get(1).group.uuid;r.window.emit('pagehide',{persisted:true});assert.equal(r.raf.size,0);assert.notEqual(r.renderer.disposed,true);r.window.emit('pageshow');assert.ok(r.raf.size>0);assert.equal(r.api.office.stations.get(1).group.uuid,uuid);});
 test('disposal releases the directional shadow target',()=>{const o=buildOffice();let disposed=false;o.sun.shadow.dispose=()=>{disposed=true;};disposeOffice(o);assert.equal(disposed,true);});
+test('drag orbits freely, right drag pans, the wheel zooms toward the cursor, and keys pan',t=>{
+  const r=runtime(t,{running:false}),canvas=r.nodes.get('office-canvas'),office=r.api.office,home=office.yaw;
+  const drag=(button,points,extra={})=>{canvas.emit('pointerdown',{button,pointerId:1,clientX:points[0][0],clientY:points[0][1],...extra});for(const [x,y] of points.slice(1))canvas.emit('pointermove',{pointerId:1,clientX:x,clientY:y});const [x,y]=points.at(-1);canvas.emit('pointerup',{button,pointerId:1,clientX:x,clientY:y});};
+  drag(0,[[200,300],[500,300],[800,300]]);const turned=Math.atan2(Math.sin(office.yaw-home),Math.cos(office.yaw-home));
+  assert.ok(Math.abs(turned)>2,'Orbit is no longer limited to a narrow arc');assert.equal(r.opened(),null,'A drag is not a click');
+  const yaw=office.yaw;drag(2,[[500,300],[620,360]]);assert.equal(office.yaw,yaw);assert.notDeepEqual(office.target,{x:0,z:0},'Right drag pans');
+  let prevented=false;const zoom=office.zoom;canvas.emit('wheel',{deltaY:-200,deltaMode:0,clientX:200,clientY:200,preventDefault(){prevented=true;}});assert.ok(office.zoom>zoom&&prevented,'Wheel zooms in');
+  office.zoom=cameraLimits().maxZoom;prevented=false;canvas.emit('wheel',{deltaY:-200,deltaMode:0,clientX:200,clientY:200,preventDefault(){prevented=true;}});assert.equal(prevented,false,'At the zoom limit the page scrolls');
+  r.nodes.get('view-reset').emit('click');assert.deepEqual(office.target,{x:0,z:0});assert.equal(office.zoom,1);assert.equal(office.yaw,home);
+  canvas.emit('keydown',{key:'ArrowRight',shiftKey:true,preventDefault(){}});assert.notDeepEqual(office.target,{x:0,z:0},'Shift+arrow pans');
+});
+
+test('environment baking releases temporary resources on success and failure',()=>{
+  for(const fails of [false,true]){
+    const released=[];const target={texture:{}};
+    class RoomEnvironment{dispose(){released.push('room');}}
+    class PMREMGenerator{fromScene(room,blur){assert.ok(room instanceof RoomEnvironment);assert.equal(blur,.04);if(fails)throw Error('bake failed');return target;}dispose(){released.push('generator');}}
+    const create=()=>createStudioEnvironment({}, {PMREMGenerator,RoomEnvironment});
+    if(fails)assert.throws(create,/bake failed/);else assert.equal(create(),target);
+    assert.deepEqual(released,['room','generator']);
+  }
+});
+test('environment render target is released once on disposal or first paint failure',t=>{
+  let disposed=0;const target={texture:{},dispose(){disposed++;}};
+  const r=runtime(t,{running:false,environmentFactory:()=>target});
+  assert.equal(r.api.office.scene.environment,target.texture);r.api.dispose();r.api.dispose();assert.equal(disposed,1);assert.equal(r.api.office.scene.environment,null);
+  const failedTarget={texture:{},dispose(){disposed++;}};
+  assert.throws(()=>runtime(t,{paintFails:true,environmentFactory:()=>failedTarget}),/3D render failed/);assert.equal(disposed,2);
+});

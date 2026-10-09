@@ -6,7 +6,7 @@ const html=fs.readFileSync('public/index.html','utf8');
 const js=fs.readFileSync('public/app.js','utf8');
 new vm.Script(js);
 for(const file of ['theme.js','state.js','seat-settings.js','scene-loader.js'])new vm.Script(fs.readFileSync('public/'+file,'utf8'));
-for(const file of ['office-model.js','office3d.js','dot-geometry.js'])execFileSync(process.execPath,['--check','public/'+file]);
+for(const file of ['office-model.js','office3d.js','dot-geometry.js','office-decor.js'])execFileSync(process.execPath,['--check','public/'+file]);
 const data=JSON.parse(fs.readFileSync('initial-snapshot.json','utf8'));
 if(!validSnapshot(data)) throw new Error('Invalid initial snapshot');
 if(!html.includes('lang="zh-CN"')||!html.includes('data:image/svg+xml'))throw new Error('Missing metadata');

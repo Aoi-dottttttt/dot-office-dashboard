@@ -24,7 +24,8 @@ The default build is a read-only demo: `/api/snapshot` returns `initial-snapshot
 - Seven fixed presentation seats, not a claim about execution capacity
 - Volumetric WebGL office and a labeled 2D compatibility fallback
 - Accessible HTML task cards and native dialogs alongside the scene
-- Keyboard/drag camera controls, zoom, reset, responsive layouts
+- Full-orbit drag controls, cursor-centered wheel zoom, right-drag/keyboard pan, and touch pinch/pan
+- Furnished day/night studio, procedural wood and screen textures, cutaway walls, and responsive layouts
 - Themes, reduced-motion support, and browser-local names/model choices
 - Explicit observation age, cached/offline status, and revision checks
 - Separate requested versus verified model/effort metadata

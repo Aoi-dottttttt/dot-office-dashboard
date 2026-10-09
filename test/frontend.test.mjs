@@ -18,12 +18,12 @@ class Element{
 function runtime(snapshot=data(),options={}){
   const nodes=new Map();const inputs=['light','dark','system'].map(value=>Object.assign(new Element('input'),{value}));
   const document={hidden:false,documentElement:Object.assign(new Element('html'),{dataset:{theme:'system'}}),body:new Element('body'),getElementById(id){if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);},createElement:t=>new Element(t),querySelectorAll:()=>inputs,addEventListener(k,fn){this[k]=fn;}};
-  let current={snapshot,revision:1};let failure=false;let interval=0;let fetches=0;let currentNow=now;
+  const storageWrites=new Map();let current={snapshot,revision:1};let failure=false;let interval=0;let fetches=0;let currentNow=now;
   class Clock extends Date{static now(){return currentNow;}}
   const reduced={matches:Boolean(options.reducedMotion),addEventListener(key,fn){this[key]=fn;}};
-  const ctx=vm.createContext({document,Intl,Date:Clock,Error,Object,Set,Map,AbortController,setTimeout,clearTimeout,matchMedia:()=>reduced,localStorage:{setItem(){}},fetch:async()=>{fetches++;if(failure)throw Error('offline');return{ok:true,json:async()=>current};},setInterval(fn,ms){interval=ms;}});
+  const ctx=vm.createContext({document,Intl,Date:Clock,Error,Object,Set,Map,AbortController,setTimeout,clearTimeout,matchMedia:()=>reduced,localStorage:{setItem(key,value){storageWrites.set(key,value);}},fetch:async()=>{fetches++;if(failure)throw Error('offline');return{ok:true,json:async()=>current};},setInterval(fn,ms){interval=ms;}});
   vm.runInContext(stateSource,ctx);vm.runInContext(settingsSource,ctx);vm.runInContext(appSource,ctx);
-  return{ctx,nodes,document,inputs,reduced,setData:(snapshot,revision)=>{current={snapshot,revision};},fail:v=>{failure=v;},setNow:v=>{currentNow=v;},interval:()=>interval,fetches:()=>fetches};
+  return{ctx,nodes,document,inputs,reduced,storageWrites,setData:(snapshot,revision)=>{current={snapshot,revision};},fail:v=>{failure=v;},setNow:v=>{currentNow=v;},interval:()=>interval,fetches:()=>fetches};
 }
 async function tick(){await new Promise(resolve=>setImmediate(resolve));}
 test('freshness gates typing on observed time and successful transport',()=>{
@@ -256,4 +256,18 @@ test('running, waiting, empty and unverified display positions are counted indep
   const r=runtime(d);await tick();
   assert.equal(r.nodes.get('occupied-count').textContent,'5');assert.equal(r.nodes.get('waiting-count').textContent,'1');assert.equal(r.nodes.get('available-count').textContent,'0');assert.equal(r.nodes.get('unverified-count').textContent,'1');
   const html=fs.readFileSync('public/index.html','utf8');assert.match(html,/已观察等待/);assert.match(html,/空展示位/);assert.doesNotMatch(html,/未知.{0,30}未运行/);
+});
+
+test('public demo keeps its labels and existing browser preference keys',async()=>{
+  const html=fs.readFileSync('public/index.html','utf8'),theme=fs.readFileSync('public/theme.js','utf8');
+  assert.match(html,/虚构演示数据/);assert.match(html,/这是虚构任务演示/);assert.match(html,/<title>dot 办公室<\/title>/);assert.doesNotMatch(html,/仅自己可见/);
+  const r=runtime();await tick();const dark=r.inputs.find(input=>input.value==='dark');dark.checked=true;dark.events.change();r.nodes.get('motion-toggle').events.click();
+  assert.equal(r.storageWrites.get('dot-office-theme'),'dark');assert.equal(r.storageWrites.get('dot-office-motion'),'off');
+  for(const key of ['dot-office-theme','dot-office-motion'])assert.ok(theme.includes(key));
+});
+test('dialog avatar and card accent track the selected character without changing task text',async()=>{
+  const r=runtime();await tick();const station=r.nodes.get('task-slots').children[0],title=data().slots[0].title;
+  station.children[0].events.click();assert.equal(r.nodes.get('dialog-avatar').src,'assets/dot-1.webp');
+  r.ctx.SeatSettings.save(1,{name:'Demo seat',modelId:'rose-heart'});
+  assert.equal(station.dataset.model,'rose-heart');assert.equal(r.nodes.get('task-dialog').dataset.model,'rose-heart');assert.equal(r.nodes.get('dialog-avatar').src,'assets/dot-6.webp');assert.equal(r.nodes.get('dialog-title').textContent,title);
 });

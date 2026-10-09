@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import * as T from '../public/vendor/three.js';
-import {buildOffice,VIEW,CHAIR,setCamera,setWorking,stepStation,updateOffice,projectAnchors,cameraLimits,disposeOffice} from '../public/office-model.js';
+import {buildOffice,VIEW,CHAIR,PIN,setCamera,setWorking,stepStation,updateOffice,projectAnchors,cameraLimits,panView,zoomView,disposeOffice} from '../public/office-model.js';
 import {dotImplicit} from '../public/dot-geometry.js';
 
 const sampleCache=new WeakMap();
@@ -56,13 +56,13 @@ test('lower default views keep every dot and screen readable with no cross-row o
         const box=projectedRect(s.dot.group,office.camera,width,height);assert.ok(box.right-box.left>=26,'Phone dots must stay discernible');
         assert.ok(box.left>0&&box.right<width&&box.top>0&&box.bottom<height);
         for(const pin of pins){assert.ok(pin.x+pin.width<box.left||pin.x>box.right||pin.y+pin.height<box.top||pin.y>box.bottom,`pin ${pin.number} hides dot ${s.number} at ${width}px`);}
-        const body=projectedRect(s.dot.body,office.camera,width,height),others=[office.room,...[...office.stations.values()].filter(other=>other!==s).map(other=>other.group)];
+        const body=projectedRect(s.dot.body,office.camera,width,height),others=[office.room,office.decor.group,...[...office.stations.values()].filter(other=>other!==s).map(other=>other.group)];
         for(let y=0;y<9;y++)for(let x=0;x<9;x++){
           const px=body.left+(body.right-body.left)*(x+.5)/9,py=body.top+(body.bottom-body.top)*(y+.5)/9;
           ray.setFromCamera(new T.Vector2(px/width*2-1,1-py/height*2),office.camera);const target=ray.intersectObject(s.dot.body,true)[0];if(!target)continue;
-          const blocker=ray.intersectObjects(others,true).find(hit=>hit.object.visible&&hit.distance<target.distance-.001);assert.equal(blocker,undefined,`seat ${s.number} blocked by ${blocker?.object.name} at ${width}px`);
+          const blocker=ray.intersectObjects(others,true).find(hit=>hit.object.visible&&hit.distance<target.distance-.001);assert.equal(blocker?.object.name,undefined,`seat ${s.number} blocked by ${blocker?.object.name} at ${width}px`);
         }
-        const screen=s.screen.getWorldPosition(new T.Vector3()).project(office.camera);ray.setFromCamera(new T.Vector2(screen.x,screen.y),office.camera);const screenHit=ray.intersectObject(s.screen)[0];assert.ok(screenHit,'Screen must face the camera');const beforeScreen=ray.intersectObjects([office.room,...[...office.stations.values()].map(other=>other.group)],true).find(hit=>hit.object.visible&&hit.object!==s.screen&&hit.distance<screenHit.distance-.025&&hit.object.parent!==s.screenUi);assert.equal(beforeScreen,undefined,`seat ${s.number}: hidden screen`);
+        const screen=s.screen.getWorldPosition(new T.Vector3()).project(office.camera);ray.setFromCamera(new T.Vector2(screen.x,screen.y),office.camera);const screenHit=ray.intersectObject(s.screen)[0];assert.ok(screenHit,'Screen must face the camera');const beforeScreen=ray.intersectObjects([office.room,office.decor.group,...[...office.stations.values()].map(other=>other.group)],true).find(hit=>hit.object.visible&&hit.object!==s.screen&&hit.distance<screenHit.distance-.025&&hit.object.parent!==s.screenUi);assert.equal(beforeScreen?.object.name,undefined,`seat ${s.number}: hidden screen`);
       }
     }
   }
@@ -75,17 +75,52 @@ test('responsive room moves existing stations and restores the lower wide camera
   setCamera(office,1440,860);assert.equal(office.layout,'wide');assert.deepEqual([...office.stations.values()].map(s=>s.dot.group.uuid),identities);assert.equal(office.yaw,VIEW.yaw);assert.ok(office.room.getObjectByName('left-cutaway').position.y<.2);assert.ok(office.sun.shadow.intensity<.6);disposeOffice(office);
 });
 
-test('left task cards keep readable boxes clear of stations and each other throughout supported camera ranges',()=>{
-  const office=buildOffice();const overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
-  for(const [width,height] of [[282,1040],[342,1040],[650,1040],[760,1040],[802,800],[1000,800],[1180,860],[1440,860]]){
-    setCamera(office,width,height);const limits=cameraLimits(office.layout);
-    for(const yaw of [limits.minYaw,limits.maxYaw])for(const elevation of [limits.minElevation,limits.maxElevation])for(const zoom of [1,limits.maxZoom])for(const working of [false,true]){
-      Object.assign(office,{yaw,elevation,zoom});setCamera(office,width,height);for(const station of office.stations.values())setWorking(station,working,{instant:true,idleYaw:yaw});updateOffice(office,0,0,false);
-      const panels=projectAnchors(office,width,height);for(const panel of panels.filter(p=>p.visible)){
+test('cards keep their own aisle or shrink to tags under any orbit, zoom and pan',()=>{
+  const office=buildOffice(),limits=cameraLimits(),overlap=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
+  for(const [width,height] of [[282,1040],[390,1040],[802,800],[1180,860],[1440,860]]){
+    setCamera(office,width,height);const size=office.roomSize;
+    for(const yaw of [-3,-2,-1,0,.14,1,2,3])for(const elevation of [limits.minElevation,VIEW.elevation,limits.maxElevation])for(const zoom of [limits.minZoom,1,2.5])for(const target of [{x:0,z:0},{x:size.width/4,z:-size.depth/5}]){
+      Object.assign(office,{yaw,elevation,zoom,target});setCamera(office,width,height);updateOffice(office,0,0,false);
+      const panels=projectAnchors(office,width,height),view=`${width}px yaw ${yaw} elevation ${elevation} zoom ${zoom}`;assert.equal(panels.length,7);
+      for(const panel of panels.filter(p=>p.visible)){
+        assert.ok(panel.x>=6&&panel.y>=6&&panel.x+panel.width<=width-6&&panel.y+panel.height<=height-6,`panel ${panel.number} leaves the stage at ${view}`);
+        if(panel.compact){assert.equal(panel.width,PIN.compactWidth);assert.ok(panel.y+panel.height<=panel.bodyBounds.top,`tag ${panel.number} covers its character at ${view}`);continue;}
         assert.ok(panel.width>=132&&panel.height===100);assert.ok(panel.x+panel.width+11<panel.stationBounds.left);
-        for(const other of panels){if(other!==panel&&other.visible)assert.equal(overlap(panel,other),false,`cards overlap at ${width}`);const b=other.stationBounds;assert.equal(overlap(panel,{x:b.left,y:b.top,width:b.right-b.left,height:b.bottom-b.top}),false,`card ${panel.number} covers station ${other.number} at ${width}`);}
+        for(const other of panels){if(other===panel)continue;const b=other.stationBounds;
+          assert.equal(overlap(panel,{x:b.left,y:b.top,width:b.right-b.left,height:b.bottom-b.top}),false,`card ${panel.number} covers station ${other.number} at ${view}`);
+          if(other.visible&&!other.compact)assert.equal(overlap(panel,other),false,`cards ${panel.number} and ${other.number} overlap at ${view}`);}
       }
     }
   }
+  disposeOffice(office);
+});
+
+const shown=object=>{for(let o=object;o;o=o.parent)if(!o.visible)return false;return true;};
+test('free orbit cuts away walls between camera and room; idle characters keep their own heading',()=>{
+  const office=buildOffice(),ray=new T.Raycaster();setCamera(office,1440,860);updateOffice(office,0,0,false);
+  const back=office.room.getObjectByName('back-wall'),window=office.decor.group.getObjectByName('decor-window'),headings=()=>[...office.stations.values()].map(s=>s.swivel.rotation.y),home=headings();
+  assert.equal(office.walls.backCut,false);assert.equal(window.visible,true);assert.ok(new T.Box3().setFromObject(back).max.y>4,'Walls stand about two metres tall');
+  for(const yaw of [Math.PI,-2.2,2.2,-1.3]){
+    office.yaw=yaw;setCamera(office,1440,860);updateOffice(office,0,0,false);
+    assert.equal(office.walls.backCut,Math.cos(yaw)<0);assert.equal(office.walls.leftCut,Math.sin(yaw)<0);assert.equal(window.visible,Math.cos(yaw)>=0);
+    assert.deepEqual(headings(),home,'Characters do not turn toward the camera');
+    // No wall or furniture hides a character from the orbiting camera.
+    for(const station of office.stations.values()){
+      const center=new T.Box3().setFromObject(station.dot.body).getCenter(new T.Vector3()).project(office.camera);ray.setFromCamera(new T.Vector2(center.x,center.y),office.camera);
+      const target=ray.intersectObject(station.dot.body,true)[0];if(!target)continue;
+      const blocker=ray.intersectObjects([office.room,office.decor.group],true).find(hit=>shown(hit.object)&&hit.distance<target.distance-.001);
+      assert.equal(blocker?.object.name,undefined,`seat ${station.number} hidden at yaw ${yaw}`);
+    }
+  }
+  office.yaw=VIEW.yaw;assert.equal(setCamera(office,1440,860),true);assert.equal(window.visible,true);assert.ok(new T.Box3().setFromObject(back).max.y>4);
+  disposeOffice(office);
+});
+test('panning and cursor zoom keep the view on the room',()=>{
+  const office=buildOffice();setCamera(office,1440,860);
+  const floorPoint=(ndcX,ndcY)=>{const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(ndcX,ndcY),office.camera);const r=ray.ray;return r.origin.clone().addScaledVector(r.direction,(.55-r.origin.y)/r.direction.y);};
+  const before=floorPoint(.5,-.3);zoomView(office,2.4,.5,-.3);setCamera(office,1440,860);const after=floorPoint(.5,-.3);
+  assert.ok(before.distanceTo(after)<.05,'The point under the cursor stays put while zooming');
+  for(let i=0;i<40;i++)panView(office,50,-50);setCamera(office,1440,860);
+  assert.ok(Math.abs(office.target.x)<=office.roomSize.width/2&&Math.abs(office.target.z)<=office.roomSize.depth/2,'The pivot never leaves the room');
   disposeOffice(office);
 });

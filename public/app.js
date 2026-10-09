@@ -139,7 +139,8 @@ function render(data) {
 function updateDialog() {
   const slot = snapshot?.slots.find(item => item.number === selectedSeat); if (!slot) return;
   const state = DashboardState.inspect(slot, Date.now(), transportOk);
-  const seatName=SeatSettings.get(slot.number).name;setText($('dialog-seat'), `${seatName ? seatName+' · ' : ''}工位 ${String(slot.number).padStart(2, '0')}`);
+  const preference=SeatSettings.get(slot.number),seatName=preference.name;setText($('dialog-seat'), `${seatName ? seatName+' · ' : ''}工位 ${String(slot.number).padStart(2, '0')}`);
+  const avatar=SeatSettings.model(preference.modelId);$('task-dialog').dataset.model=avatar.id;if(!$('dialog-avatar').src?.endsWith(`dot-${avatar.image}.webp`))$('dialog-avatar').src=`assets/dot-${avatar.image}.webp`;
   setText($('dialog-title'), slot.title); setText($('dialog-summary'), slot.summary);
   const historical = (!state.fresh || !transportOk) && slot.status !== 'unknown';
   $('dialog-status').className = `status ${historical ? 'unknown' : slot.status}`;
@@ -162,7 +163,7 @@ function updateSeatPreferences() {
   for (const [number,refs] of stations) {
     const preference=SeatSettings.get(number),model=SeatSettings.model(preference.modelId);
     setText(refs.customName,preference.name);refs.customName.hidden=!preference.name;
-    refs.mascotFront.src=`assets/dot-${model.image}.webp`;refs.mascotBack.src=`assets/dot-${model.image}-back.webp`;
+    refs.mascotFront.src=`assets/dot-${model.image}.webp`;refs.mascotBack.src=`assets/dot-${model.image}-back.webp`;refs.article.dataset.model=model.id;
     refs.article.style.setProperty('--hand-color',`#${model.color.toString(16).padStart(6,'0')}`);refs.article.style.setProperty('--hand-light',`#${model.color.toString(16).padStart(6,'0')}`);
     refs.button.setAttribute('aria-label',`${preference.name?preference.name+'，':''}工位 ${String(number).padStart(2,'0')}，${refs.title.textContent}，查看任务详情`);
   }
